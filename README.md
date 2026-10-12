@@ -1,6 +1,8 @@
 # Plataforma de Product Analytics en AWS
 
-Proyecto de portafolio para un rol de **Senior Data Engineer**. Toma eventos de uso de un producto,
+Proyecto de portafolio.
+
+Toma eventos de uso de un producto,
 los limpia, los guarda en un data lake y responde preguntas de producto con SQL:
 *¿dónde abandonan los usuarios? ¿cuántos vuelven? ¿qué plataforma convierte mejor?*
 
