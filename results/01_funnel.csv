@@ -1,0 +1,6 @@
+step_no,step,users,pct_of_signup,pct_of_prev_step
+1,signup,5000,100.0,
+2,onboarding_complete,3479,69.6,69.6
+3,feature_used,2747,54.9,79.0
+4,add_to_cart,1437,28.7,52.3
+5,purchase,590,11.8,41.1

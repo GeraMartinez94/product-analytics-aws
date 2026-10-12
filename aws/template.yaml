@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Infra minima para la plataforma de Product Analytics (S3 + Glue + Athena)
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: product-analytics
+
+Resources:
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-${AWS::AccountId}-${AWS::Region}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-athena-results
+            Status: Enabled
+            Prefix: athena-results/
+            ExpirationInDays: 14
+
+  GlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: product_analytics
+
+  # Tabla con partition projection: Athena deduce las particiones por fecha,
+  # sin crawlers ni MSCK REPAIR.
+  EventsTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref GlueDatabase
+      TableInput:
+        Name: events
+        TableType: EXTERNAL_TABLE
+        Parameters:
+          classification: parquet
+          projection.enabled: "true"
+          projection.event_date.type: date
+          projection.event_date.format: yyyy-MM-dd
+          projection.event_date.range: "2026-08-01,NOW"
+          storage.location.template: !Sub "s3://${DataBucket}/curated/events/event_date=${!event_date}/"
+        PartitionKeys:
+          - { Name: event_date, Type: string }
+        StorageDescriptor:
+          Location: !Sub "s3://${DataBucket}/curated/events/"
+          InputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat
+          SerdeInfo:
+            SerializationLibrary: org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe
+          Columns:
+            - { Name: event_id, Type: string }
+            - { Name: user_id, Type: string }
+            - { Name: event_name, Type: string }
+            - { Name: event_ts, Type: timestamp }
+            - { Name: platform, Type: string }
+            - { Name: country, Type: string }
+
+  AthenaWorkgroup:
+    Type: AWS::Athena::WorkGroup
+    Properties:
+      Name: !Sub "${ProjectName}-wg"
+      State: ENABLED
+      WorkGroupConfiguration:
+        EnforceWorkGroupConfiguration: true
+        BytesScannedCutoffPerQuery: 10737418240   # tope de 10 GB por query (control de costos)
+        ResultConfiguration:
+          OutputLocation: !Sub "s3://${DataBucket}/athena-results/"
+
+Outputs:
+  BucketName: { Value: !Ref DataBucket }
+  Workgroup: { Value: !Ref AthenaWorkgroup }

@@ -1,0 +1,6 @@
+pandas
+numpy
+pyarrow
+duckdb
+boto3
+pytest
