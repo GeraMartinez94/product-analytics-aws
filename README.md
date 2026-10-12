@@ -106,11 +106,3 @@ eventos dentro del catálogo y funnel monótono decreciente.
    filtrarían por fecha (por ejemplo, los últimos 30 días) para que Athena lea solo esas particiones
    y el costo no crezca con el histórico.
 
-## 8. Guion sugerido para la reunión (2–3 minutos)
-
-1. *Problema:* "Producto necesita métricas confiables y los eventos llegan sucios."
-2. *Solución:* "Armé un pipeline evento → validación → Parquet → SQL. Corre en local con DuckDB y está diseñado para correr igual en AWS con Athena."
-3. *Decisiones técnicas:* Parquet particionado para abaratar Athena, rechazados auditables, ETL idempotente, tests de calidad.
-4. *Resultado:* "El funnel muestra que se pierden más usuarios en el onboarding, y que el paso con peor conversión es del carrito a la compra (41%)."
-5. *Honestidad:* "Son datos sintéticos y la parte AWS está escrita pero la desplegaría a continuación."
-6. *Cierre:* "En producción sumaría streaming, orquestación y dbt."
